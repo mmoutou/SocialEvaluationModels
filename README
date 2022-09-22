@@ -1,5 +1,5 @@
 SocialEvaluationModels includes code for modelling variants of Kate Button's Social Evaluation Task,
-especially the computational psychiatry project of Michelle Solomon.
+for SEL-related but also other computational psychiatry projects.
 
 The structure of the code is as follows: A part of the agent (person!) learns directly from the trials experienced. 
 This is the 'learning hub', which may have 'reporting spokes'. The latter may include processes that process
