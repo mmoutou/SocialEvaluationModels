@@ -9,4 +9,3 @@ or negative towards us (two categories), but be uncertain about which obtains. I
 combine this, so if asked 'How likely is it that this person will treat you positively', they 
 answer by p(pos treatment | positive person) p(pos person) + p(pos treat | neg person) p(neg person) ,
 a process 'read out' off the learning hub by the 'reporting spoke'
-
