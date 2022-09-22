@@ -1,0 +1,12 @@
+SocialEvaluationModels includes code for modelling variants of Kate Button's Social Evaluation Task,
+especially the computational psychiatry project of Michelle Solomon.
+
+The structure of the code is as follows: A part of the agent (person!) learns directly from the trials experienced. 
+This is the 'learning hub', which may have 'reporting spokes'. The latter may include processes that process
+the core beliefs and provide answers. For example, the 'hub' may consider that a person may be basically positive 
+or negative towards us (two categories), but be uncertain about which obtains. It may thus have a belief
+'this person has a 30% chance of being positive, and 70% of being negative'. The 'reporting spoke' may then
+combine this, so if asked 'How likely is it that this person will treat you positively', they 
+answer by p(pos treatment | positive person) p(pos person) + p(pos treat | neg person) p(neg person) ,
+a process 'read out' off the learning hub by the 'reporting spoke'
+
