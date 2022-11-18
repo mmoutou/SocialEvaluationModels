@@ -2,14 +2,14 @@ SocialEvaluationModels includes code for modelling variants of Kate Button's Soc
 for SEL-related but also other computational psychiatry projects.
 
 The structure of the code is as follows: A part of the agent (person!) learns directly from the trials experienced. 
-This is the 'learning hub', which may have 'reporting spokes'. The latter may include processes that process
-the core beliefs and provide answers. For example, the 'hub' may consider that a person may be basically positive 
+This is the 'learning hub', which may have 'reporting spokes'. The latter may include further processing of
+the 'hub' beliefs and provide answers. For example, the 'hub' may consider that a person may be basically positive 
 or negative towards us (two categories), but be uncertain about which obtains. It may thus have a belief
 'this person has a 30% chance of being positive, and 70% of being negative'. The 'reporting spoke' may then
 combine this, so if asked 'How likely is it that this person will treat you positively', they 
 answer by p(pos treatment | positive person) p(pos person) + p(pos treat | neg person) p(neg person) ,
 a process 'read out' off the learning hub by the 'reporting spoke'.
 
-As of 22 Sept, the git main contains all specific code needed to simulate single-rater conditions,
+As of Nov 22, the git main contains all specific code needed to simulate single-rater conditions,
 and estimate likelihoods of active-inference formatted data, but not as yet whole-experiment and
 Pavlovia-formated csv data, a TOY-DATA example of which is provided (has a slight bug but OK for testing code).
