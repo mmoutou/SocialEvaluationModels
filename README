@@ -14,6 +14,7 @@ combine this, so if asked 'How likely is it that this person will treat you posi
 answer by p(pos treatment | positive person) p(pos person) + p(pos treat | neg person) p(neg person) ,
 a process 'read out' off the learning hub by the 'reporting spoke'.
 
-As of Nov 22, the git main contains all specific code needed to simulate single-rater conditions,
+As of Dec 22, the git main contains all specific code needed to simulate single-rater conditions,
 and estimate likelihoods of active-inference formatted data, but not as yet whole-experiment and
 Pavlovia-formated csv data, a TOY-DATA example of which is provided (has a slight bug but OK for testing code).
+https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0119456
