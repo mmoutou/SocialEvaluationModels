@@ -1,6 +1,10 @@
 SocialEvaluationModels includes code for modelling variants of Kate Button's Social Evaluation Task,
 for SEL-related but also other computational psychiatry projects.
 
+For a demo, paste the following to the matlab command prompt:
+% Parameters below are:      [attr0,dInitEv,aInitEv,uPrec,wAttr,w0,lrnR, desBias]
+% close all; pRet=0.6; selfp= [0.5,   1,      2,     1/5,   6,   0,   1,      0]; [MDPs,modStruc,Inp,Resp] = learnReport01(selfp,pRet,1);
+
 The structure of the code is as follows: A part of the agent (person!) learns directly from the trials experienced. 
 This is the 'learning hub', which may have 'reporting spokes'. The latter may include further processing of
 the 'hub' beliefs and provide answers. For example, the 'hub' may consider that a person may be basically positive 
