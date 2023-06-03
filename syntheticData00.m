@@ -1,6 +1,7 @@
 % script syntheticData00.m
 % To make synthetic data for testing model-fitting and parameter recovery.
-% Change base directory (folder) baseDir to use this.
+% Change base directory (folder) baseDir , storage dir. name synDatName and 
+%        total N of sythentic 'participants', synTotN
 % Will create if necessary, and make a subdir to write within, dataFits/fittingTests
 %
 % Works well enough as per tests to 1 June 23, but labelled 00 as it uses the same
@@ -9,9 +10,9 @@
 
 %% Menu-like items
 codeTest = 0;  % set to 1 to activate debugging printouts etc.
-synDatName = 'synRepDictCIs';   % name for synthetic dataset e.g. one with
+synDatName = 'syntheTest';   % name for synthetic dataset e.g. one with
    % ranges (confidence-interval like) deduced from a repeated dictator study.
-synTotN = 1000;  
+synTotN = 10;    % number of synthetic 'participants' to create.
 if codeTest; synTotN =3; end
 
 numIDfiller = 660000; 
@@ -39,6 +40,7 @@ baseDir{2} = '/home/mmoutou/googledirs/MM/SocEvalModels_(not_git)_rough_work/';
 baseDir{3} = 'C:\Users\mmpsy\Nextcloud\MM\googledirs\SocEvalModels_(not_git)_rough_work\';
 % not sure if this exists on Ubuntu PC :
 baseDir{4} = '/home/michael/googledirs/MM/SocEvalModels_(not_git)_rough_work/';
+baseDir{5} ='C:\Users\mmpsy\Nextcloud\MM\localgit\SocialEvaluationModels\';          % MM local git
 cwd = pwd;
 baseD = {};
 for dirN = 1:length(baseDir)
