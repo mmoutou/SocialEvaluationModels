@@ -4,21 +4,32 @@
 %        total N of sythentic 'participants', synTotN
 % Will create if necessary, and make a subdir to write within, dataFits/fittingTests
 %
+scriptName = 'syntheticData00';
 % Works well enough as per tests to 1 June 23, but labelled 00 as it uses the same
 % stimuli for all generated data - would be better to use stimuli generated 
 % either by constrained randomisation or as seen by a set of real participants.
 
 %% Menu-like items
-codeTest = 0;  % set to 1 to activate debugging printouts etc.
+codeTest = 1;  % set to 1 to activate debugging printouts etc.
 synDatName = 'syntheTest';   % name for synthetic dataset e.g. one with
    % ranges (confidence-interval like) deduced from a repeated dictator study.
+storeDir = 'dataFits/fittingTests';   % path from the base directory to where-to-store.
 synTotN = 10;    % number of synthetic 'participants' to create.
-if codeTest; synTotN =3; end
-
 numIDfiller = 660000; 
 
-%  Set High and Lo end of range Parameter vector in native space. Set them really close
-%  together, differing by 'little', if you want that param effectively constant
+%% Adjust according to whether we are testing the code or not -------------------------
+if codeTest; synTotN =100; end
+seed = 661;    % Only used if codeTest~=0
+if ~codeTest
+    rng('shuffle');
+else
+    rng(seed, 'twister');
+    warning([scriptName ' running with testing/debug settings incl rng(seed,''twister''']);
+end % for reproducible sequences of random numbers; 'shuffle' bases on time.
+
+%% %  Set High and Lo end of range Parameter vector --------------------------------------
+%  First set in native space. Set them really close together, differing by 'little', if you want 
+%  that param effectively constant
 little = 1e-5;  % number which should be psychologically negligible 
 %         1          2        3      4         5        6       7        8        9    10    11     12      
 %      posiSelf  posiOther dEvSelf dEvOther aEvSelf aEvOther alphaPrec genLR    repLR wp0   wAttr  mem      
@@ -32,7 +43,7 @@ pTrLo = nat2tr_SEL_i(parLo,1);  % rem last entry means we are working with vecto
 pTrM  = (pTrHi + pTrLo)/2;
 pTrSD = abs(pTrHi - pTrLo)/4;   % NB ranges above should corresp. to +/- 2SD
 
-%% The path where dataFits/fittingTests resides here.
+%% The path where dataFits/fittingTests reside ----------------------------
 %  Make note of where we are and change to it.
 baseDir = {};
 baseDir{1} = 'NewUserBasePath';   % Users can add their path here. 
@@ -41,7 +52,7 @@ baseDir{3} = 'C:\Users\mmpsy\Nextcloud\MM\googledirs\SocEvalModels_(not_git)_rou
 % not sure if this exists on Ubuntu PC :
 baseDir{4} = '/home/michael/googledirs/MM/SocEvalModels_(not_git)_rough_work/';
 baseDir{5} ='C:\Users\mmpsy\Nextcloud\MM\localgit\SocialEvaluationModels\';          % MM local git
-cwd = pwd;
+cwd = cd;
 baseD = {};
 for dirN = 1:length(baseDir)
     if isempty(baseD)
@@ -54,6 +65,13 @@ for dirN = 1:length(baseDir)
       end
     end
 end
+if exist( storeDir,'dir')
+    cd(storeDir); 
+else
+    error([storeDir ' does not exist.']);
+end
+mkdir(pwd,synDatName);
+cd(synDatName);
 
 %% A bit of housework
 hd=  {'ptID','posiSelf','posiOther','dEvSelf','dEvOther','aEvSelf','aEvOther','alphaPrec','genLR','repLR','wp0','wAttr','mem','LL'};
@@ -107,7 +125,12 @@ for ptN = 1:synTotN
     Resp = resp8;    % to use as template.
     for blN=1:length(Inp)
        for trN=1:length(Inp{blN}.posRep)
-           Resp{blN}.posRep{trN} = syMDP8{blN}.Resp.posRep{trN}; 
+           % Record generated responses:
+           Resp{blN}.posRep{trN} = syMDP8{blN}.Resp.posRep{trN};
+           % ... and store them also in information component of state/observation. 
+           %     The '2]' here is a grading of whether intented pronouncement was made -
+           %     - it should not affect the fit measures. 
+           Inp{blN}.posRep{trN}(:,2) = [Resp{blN}.posRep{trN}(2) 2]';
        end
     end 
     selD{ptN}.trPar = pTr8;
@@ -121,15 +144,6 @@ for ptN = 1:synTotN
   
 end
 
-%% Storage directory -------------------------------------
-if exist( 'dataFits/fittingTests','dir')
-    cd('dataFits/fittingTests');
-else
-    warning('dataFits/fittingTests does not exist -- working here:');
-    pwd
-end
-mkdir(pwd,synDatName);
-cd(synDatName);
 
 %% Save the model and sampled parameters in mat and csv form 
 save('modStruc8a.mat','modStruc8');  % will be looked for by e.g. SEL2_Grid04a_xiii

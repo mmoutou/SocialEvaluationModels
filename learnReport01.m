@@ -49,7 +49,7 @@ if trueAttr == 1; AttrVal = [pRet 0.75];  else AttrVal = [0.25 pRet];  end
 if isempty(selfp);   selfp  = [0.1,   2,       2,    0.1,    6,   0,   1,    0.0];   end
                                  % REM Joe's reversal paper had attr0,pS0,uH,uS, wAttr,wS,w0,uPi,eta_dg
                                  % uPrec (cf. uPol) is 1/alphaPrec, the expected prior prec.
-attr0 = selfp(1);       
+attr0 = selfp(1);      
 dInitEv = selfp(2);   aInitEv = selfp(3);  % give error if these fail :)
 try
     alphaPrec = 1/selfp(4); % uPrec (cf. uPol) is 1/alphaPrec, the expected prior prec.
@@ -101,6 +101,7 @@ desBias = 0;  % Usually don't use this but w0 to account for overall biases if p
 % midPFair is a resoln x resoln grid of 'choice A vs B' probabilities depending
 % on [wAttr,0,w0]
 midPPos = midpfair([wAttr,0,w0],resNHub);
+
 Ioff = 0.5;  % Always use the same offset for the logistic below, for centering
 corePFair = 1/(1+exp(w0+(AttrVal(trueAttr)-Ioff)*wAttr ));
 [~, corePBin] = min(abs(midGridRepo - corePFair));  % Bin where the intended generative
@@ -229,10 +230,14 @@ C1  = CHubLrn(allP);       % from CHubSerDict
 % state factors: stage, trueAttr, trueSI, Level2Report
 %--------------------------------------------------------------------------
 
-%  d  has 1 factor, beliefs about 'true Attr' state
+%  d  has 1 factor, beliefs about 'true Attr' state ofthe rater
 %  allP must include, for use here: attr0, dInitEv, resNHub.
 %     Optional Upop (default=1), the dispersion param. for the population distro.
 d0 = dHubClassLrn(allP);                           % from dHubClassSerDict
+%should produce the basic output that I should understand the physological meaning of it
+
+%then i would need to put the trials together to have the model of the
+%whole task
 
 %%  Hub MDP Structure - to be used to generate arrays for multiple trials
 %==========================================================================
@@ -275,12 +280,20 @@ hmmHub.name.modality = hubModalityNames; % just if needed for testing - mainly s
 %  So of the form V(timestep, action-sequence, state-factor) I think
 %  REM here stateFNRep = 2;  % No. of state factors: beliefState, reportState
 %--------------------------------------------------------------------------
-V2 = nan(Tsteps2-1,resNRepo,stateFNRep);  % see above.
+V2 = nan(Tsteps2-1,resNRepo,stateFNRep);  % see above. stateFNRep relevant state factor
 V2(:,:,1) = 1;  % is actions affecting state factor 1, e.g. beliefAttr, and only
                 % 'acceptance' - beliefs are changed only due to Hub!
 V2(:,:,2) = 1:resNRepo;  %  is actions affecting state factor 2, e.g. reportAttr
 
+%there is reporting and learning MDP,
+%what you do i neach timestep will affect what u do in the next timestep, 
+%ex timestep one would be yr starting point, if u have an action MDP then u
+%can take an action in timestep 1 and it will affect what happens in
+%timestep 2. then the learning MDP would feel in to each timestep which
+%would affect the decision.
 
+%rule of thumb:rows are outputs and everything else is input in the maps
+%ex. time, aciton etc. would be in cols not rows
 %% %% The key dynamics: B map, i.e. Transitions conditioned on action %% %
 % controlled transitions: B{u}
 %--------------------------------------------------------------------------
@@ -292,14 +305,17 @@ V2(:,:,2) = 1:resNRepo;  %  is actions affecting state factor 2, e.g. reportAttr
 %       which has Nk states; There must be a grand total of Mk
 %       actions / control states for these, the 'pages' of B{k}, not
 %       all of which might be available under V for the current time-step.
+%B map: takes initial state of the world and transitions it to the final
+%stage of the world at that specific timestep, B map doesn't change with
+%timestep. Identity maps do not change, this B map is an identity map
 %--------------------------------------------------------------------------
 % B2{1} : transitions over factor 1, e.g. as-believed-Attr : There is only the
 %        the action 'accept fate', the pt can't change this
 %        here, only the reporting of it.
-B2{1} = eye(resNRepo);
+B2{1} = eye(resNRepo); %ex. the transition between each timestep is the identity maps
 % B{2} is the choice of reported level of Attr
 B2{2} = zeros(resNRepo+1,resNRepo+1,resNRepo);
-% First, from Initial state which is resolN+1, valid report
+% First, from Initial state which is resolN+1(resolution of the likert scale, if it's +1 then n u did 3 then the 4th is yr initial state), valid report
 % actions lead to the respective report state:
 for contrS=1:resNRepo
    noisy = allP.noiseFloor * ones(resNRepo,1);
@@ -313,7 +329,8 @@ for contrS=1:resNRepo
    % for clarity, first from valid report states:
    B2{2}(1:resNRepo,1:resNRepo,contrS) = eye(resNRepo);
 end
-
+%run this ltr, it would add noise. ex. if u were supposed to end up in 4,
+%it would intentionally give u a bit of an error maybe u could end up in 3
 
 %% %%% outcome probabilities: A template(likelihood map) %%%%%%%%%%% %
 %--------------------------------------------------------------------%
@@ -327,6 +344,8 @@ end
 % A2{2} : How well Intent is to be reported.
 % Their form is A{G}(observation, trueState, level-to-report)
 % See Emotion_learning_model... A map as example.
+%curly brackets are state factors
+
 %--------------------------------------------------------------------%
 
 % A2{1} : Informational, (eg Attr)-report stage
@@ -334,6 +353,10 @@ end
 %      observed-e.g. AttrReport  eg as-believed-Attr  eg AttrReport
 A2{1} = zeros( resNRepo+1,        resNRepo,           resNRepo+1 );
 % Report outcomes from initial report state, resolN+1,
+%participants don't care about which timestep they are in;
+%ex.if the agent believes X is going to happen they would report X, that is if
+%they value being correct, they have learned from the learning MDP and then
+%they report you what they have learned
 % are all 'null', aka noReportMade, only coincidentally resNRepo+1:
 A2{1}(resNRepo+1,:,resNRepo+1) = 1;       
 % Report outcomes from valid report states are as themselves,
@@ -361,6 +384,8 @@ A2{2} = ARepClassifLrn(allP);      % from ARepClassifSerDict
 %--------------------------------------------------------------------------
 
 % Outcome factor 1 is informational (e.g. Attr) report:
+%if the states are preferred they would have a high value for being correct
+%and low value for being wrong;
 C2{1} = zeros(resNRepo+1,Tsteps2 );  % No preferences here!
 
 % Outcome factor for desirability to report what one believes is best:
@@ -410,13 +435,13 @@ P = spm_vec(modelStructure.indexP);    % Un-necessary to run below, but good for
 %                      [attr0,dInitEv,aInitEv,uPrec,wAttr,w0,lrnR, desBias]
 
 % indexP fields:      {'attr0','dInitEv','aInitEv','alphaPrec','wAttr','w0'}  ;
-modelStructure.priPar=[[1.01 , 1.01,     1.01,          1.01,     10,  10]; ...  % A
-                       [1.01 ,   2,      2,             2,        10,  10]; ...  % B
+modelStructure.priPar=[[1.01 ,   1.01,     1.01,          1.01,     10,  10]; ...  % A
+                       [1.01 ,    2,      2,             2,        10,  10]; ...  % B
                        [ 0,      0,      0,             0,       -46  -46]; ...  % lo
                        [ 1,     100,    100,            100,      46   46]];     % hi
         %                        <- max    at 1              >   <   SD ~10  >
 
-MDPs = spm_mdp_L_xi(P,modelStructure,Inp,Resp,details);
+MDPs = spm_mdp_L_xi(P,modelStructure,Inp,Resp,details); %main structure of MDPs, likelihood function, consists of markov decision processes
 
 
 %% Tidy and MDPs for output ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1,9 +1,9 @@
 function optPetc = SEL2_Grid04a_xiii(selAIFile, batch2fit, initTrParFile, grN, grSc, batchSize, fitDir, codeTest )
-%  optPetc = SEL2_Grid03b_xiii(datFile, batch2fit, initTrParFile, grN, grSc, batchSize, fitDir, codeTest ))   :
+%  optPetc = SEL2_Grid04a_xiii(datFile, batch2fit, initTrParFile, grN, grSc, batchSize, fitDir, codeTest ))   :
 %                              MAP fitting, with weakly informative priors 
 %  Fitting of YSELT data, Carlisi et al, over a grid, supplemented with key descriptives.
 %  
-% SEL2_Grid03*_**  MAP fitting, with weakly informative priors 
+% SEL2_Grid04*_**  MAP fitting, with weakly informative priors 
 %                  initTrParFile has initial vals of params in fitting (transf. space, as per
 %                  [numID,'posiSelf','posiOther','dEvSelf','dEvOther','aEvSelf','aEvOther','alphaPrec','genLR','repLR','wp0','wAttr','mem'... ]  
 %                         BIC derived fairly rigorously from iBIC approx:
@@ -22,7 +22,7 @@ function optPetc = SEL2_Grid04a_xiii(selAIFile, batch2fit, initTrParFile, grN, g
 % 
 % Example use with synthetic data, 
 % from .../SocEvalModels_(not_git)_rough_work/dataFits/fittingTests/synRepDictCIs
-%   fitD = pwd; % '/home/michael/googledirs/MM/SocEvalModels_(not_git)_rough_work/dataFits/fittingTests/synRepDictCIs/'
+%   fitD = cd; % '/home/michael/googledirs/MM/SocEvalModels_(not_git)_rough_work/dataFits/fittingTests/synRepDictCIs/'
 %   synParF = 'ldat_gen_100_synRepDictCIs.mat';
 %   optPtest = SEL2_Grid04a_xiii('dat100_synRepDictCIs.mat',1,synParF,12,5,20,fitD,0)
 
@@ -136,17 +136,71 @@ resNRepo = modStruc8.allP.resNRepo;
 % midGrid = 1/(2*resNRepo)+(0:(resNRepo-1))/resNRepo;
 % To help store descriptives, the order in which conditions will be stored:
 ord2store = [111,1; 132,2; 110,3; 120,4; 130,5; 211,6; 232,7; 210,8; 220,9; 230,10];
-measN = 2* size(ord2store,1);  % one for 'early', one for 'late' part of each block.
+measN = 3* size(ord2store,1);  % one for 'early', 'mid', 'late' part of each block.
 hdLong = {'numID'};
 hdLong((end+1):(end+length(hd4outp))) = hd4outp; 
 hdLong((end+1):(end+measN))={'eaS1neg','eaS1pos','eaSneg','eaSneu','eaSpos',...
-                       'eaO1neg','eaO1pos','eaOneg','eaOneu','eaOpos',...
+                             'eaO1neg','eaO1pos','eaOneg','eaOneu','eaOpos',...
+                          'midS1neg','midS1pos','midSneg','midSneu','midSpos',...
+                          'midO1neg','midO1pos','midOneg','midOneu','midOpos',...
                        'ltS1neg','ltS1pos','ltSneg','ltSneu','ltSpos',...
                        'ltO1neg','ltO1pos','ltOneg','ltOneu','ltOpos' };
 optPetc = nan(length(todo), totParN+4+measN);   % for optimised parameters AND 4 measures of model fit,
          % LL, MAPd, AIC, BIC incl the non-MDP params and the ones we won't explore here.
 optNatP = optPetc;   % copy with params in native space
 numID = nan(length(todo),1);                   % just to hold  numIDs
+
+%% Main loops over participants ---------------------------------------------------------
+
+%% Descriptives -------------------------------------------------------------------------
+ptCnt = 0;        % counts participans
+for ptN = todo
+    ptCnt = ptCnt+1; 
+    try % try setting a numerical ID
+        numID(ptCnt) = selD{ptN}.numID;    
+    catch
+        numID(ptCnt) = ptN;
+    end
+
+     %% Clear the decks and set stuff common to ALL blocks 
+     mapMod.mdpStruc = modStruc8;
+     mapMod.mdpStruc.indexP = nat2tr_SEL_i([]); 
+     mapMod.Inp = selD{ptN}.Inp;
+     mapMod.Resp = selD{ptN}.Resp;
+
+     % Derive the descriptives. For each of 
+     % self-veRepeated, self+Repeated, self-_unrep, self_neut_unrep self+_unrep , other similar ,
+     % derive early, mid and late averages using weights linearly decreasing away from
+     % the defining point of each section. Conditions are, in order and if present,
+     % 111,132,110,120,130, 211,232,210,220,230
+     % and the corresp. data are the mapMod.Resp{block}.posRep{trial}(2) 
+     for blkN = 1:totBlN
+         blTrN = length(selD{ptN}.Inp{blkN}.posRep);  
+         d = nan(1, blTrN);
+         for trN = 1:blTrN; d(trN) = mapMod.Resp{blkN}.posRep{trN}(2); end
+
+         ea = tent1dFilter(d,1,round(blTrN/2));
+         mid = tent1dFilter(d,round(blTrN/2),round(blTrN/2));
+         lt = tent1dFilter(d,length(d),round(blTrN/2));
+
+         % find where to store these:
+         cond = mapMod.Inp{blkN}.condCode;
+         col  = find(ord2store(:,1)==cond);
+         optPetc(ptCnt,totParN+4 + col) = ea;
+         optPetc(ptCnt,totParN+4 + col + size(ord2store,1)) = mid;
+         optPetc(ptCnt,totParN+4 + col + 2*size(ord2store,1)) = lt;         
+     end
+
+     % Store Key Descriptives and IDs, with ugly backup for legacy compatibility:
+     ldatBak = ldat;           hdBak=hd; 
+     ldat = [numID optPetc];   hd = hdLong;   % THEN RESORE ... urgh ugly legacy stuff ...
+     save([fitFileName '_ldat.mat'],'ldat','hd'); 
+     mat2csv2Dfl(ldat,[fitFileName '_ldat.csv'],0,1,hdLong);
+     ldat = ldatBak;           hd = hdBak;  % urgh ugly ...
+     
+end  % loop over descriptives 
+
+%% Grid fitting -------------------------------------------------------------------------
 ptCnt = 0;        % counts participans
 for ptN = todo
     ptCnt = ptCnt+1; 
@@ -168,39 +222,49 @@ for ptN = todo
      mapMod.Inp = selD{ptN}.Inp;
      mapMod.Resp = selD{ptN}.Resp;
 
-     % Derive some descriptives. For each of 
-     % self-veRepeated, self+Repeated, self-_unrep, self_neut_unrep self+_unrep , other similar ,
-     % derived linearly weighed early and late averages. 
-     % these are, in order and if present, 111,132,110,120,130, 211,232,210,220,230
-     % and the corresp. data are the mapMod.Resp{block}.posRep{trial}(2) 
-     for blkN = 1:totBlN
-         blTrN = length(selD{ptN}.Inp{blkN}.posRep);  
-         % Weights to derive early and late averages of trial:
-         z = sum(round(blTrN/2 + 0.1):-1:1);  % normalizing constant needed below
-         eaW = [round(blTrN/2 + 0.1):-1:1 zeros(1, 20 - round(blTrN/2 + 0.1))];
-         eaW = eaW / z;
-         ltW  = fliplr(eaW);
-         d = nan(1, blTrN);
-         for trN = 1:blTrN; d(trN) = mapMod.Resp{blkN}.posRep{trN}(2); end
-         ea = sum( d .* eaW);
-         lt = sum( d .* ltW); 
-         % find where to store these:
-         cond = mapMod.Inp{blkN}.condCode;
-         col  = find(ord2store(:,1)==cond);
-         optPetc(ptCnt,totParN+4 + col) = ea;
-         optPetc(ptCnt,totParN+4 + col + size(ord2store,1)) = lt;
-     end
+% %      Derive some descriptives. For each of 
+% %      self-veRepeated, self+Repeated, self-_unrep, self_neut_unrep self+_unrep , other similar ,
+% %      derived linearly weighed early and late averages. 
+% %      these are, in order and if present, 111,132,110,120,130, 211,232,210,220,230
+% %      and the corresp. data are the mapMod.Resp{block}.posRep{trial}(2) 
+%      for blkN = 1:totBlN
+%          blTrN = length(selD{ptN}.Inp{blkN}.posRep);  
+%          d = nan(1, blTrN);
+%          for trN = 1:blTrN; d(trN) = mapMod.Resp{blkN}.posRep{trN}(2); end
+% 
+%          Commented block before using dedicated filter function for local averages:
+%          Weights to derive early and late averages of trial:
+%          z = sum(round(blTrN/2 + 0.1):-1:1);  % normalizing constant needed below
+%          eaW = [round(blTrN/2 + 0.1):-1:1 zeros(1, 20 - round(blTrN/2 + 0.1))];
+%          eaW = eaW / z;
+%          ltW  = fliplr(eaW);
+%           ea = sum( d .* eaW);
+%          lt = sum( d .* ltW); 
+% 
+%          ea = tent1dFilter(d,1,round(blTrN/2));
+%          mid = tent1dFilter(d,round(blTrN/2),round(blTrN/2));
+%          lt = tent1dFilter(d,1,round(blTrN/2));
+% 
+%          find where to store these:
+%          cond = mapMod.Inp{blkN}.condCode;
+%          col  = find(ord2store(:,1)==cond);
+%          optPetc(ptCnt,totParN+4 + col) = ea;
+%          optPetc(ptCnt,totParN+4 + col + size(ord2store,1)) = mid;
+%          optPetc(ptCnt,totParN+4 + col + 2*size(ord2store,1)) = lt;         
+%      end
 
      
      %% Serial, 'factorized' grid fitting over parameters ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      parCnt = 0; 
+     %% Loop over one parameter at a time ````````````````````````````````````````````````
      for par2grid = parOrdGrid
         parCnt = parCnt + 1;
         expGrid{ptN,par2grid}.parPDens = nan(3,2*grN+1);  % to work on finding MAP etc. Rows of 
                                                           % param value, fit measure, sum LL.
    
-        %% Starting param values for the (iterative convergence) fit. Some derived from 1st block.
-        %  Use the average values of HI and SI as starting points for the priors. NOTE
+        %% First time aroune, initialize param values for the (iterative convergence) fit. 
+        %  Some param. values are just derived from 1st block.
+        %  Use the average values of potitivity as starting points for the priors. NOTE
         %  THESE ARE NOT PRIORS IN THE COG MODEL, ONLY INITIAL VALUES FOR FITTING.
         %  Also master copy of MAP model specification.
         if parCnt == 1
@@ -262,9 +326,10 @@ for ptN = todo
 
            fields4MDPs = fieldnames(mapMod.mdpStruc.indexP); 
            refMapMod = mapMod;     % master copy
-        end       
+    
+        end   % if parCnt == 1 , i.e. to initialize parameter values for the grid fitting.    
         
-        %% Iterate over the grid
+        %% Key loop: Iterate over the 1-D grid of the current parameter ''''''''''''''''''''''' 
         for iGr = -grN:grN      
             mapMod = refMapMod; % REM mapMod is max a posteriori focused model whose elements
                                 % will be modified acc. to learning, coalitional bias etc. and
@@ -307,9 +372,8 @@ for ptN = todo
             catch
                % just carry on
             end
-
                
-            %% ~~~~~~~~~~~ Key Log Lik Density ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            %% ~~~~~~~~~~~ The crucial Log Lik Density ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
             %   ================================================================================
             pTr = spm_vec(mapMod.mdpStruc.indexP)';
@@ -373,8 +437,7 @@ for ptN = todo
         save([fitFileName '.mat'],'expGrid','optPetc','optNatP','hd','hdLong','numID');
     end
 
-    % Key version, with params in transformed space, also the basis for further
-    % fits:
+    % Version with params in transformed space, also the basis for further fits:
     optPar = [numID optPetc(:,1:totParN+4)];
     hdBak=hd; hd = {'ptID', hd4outp{1:end}};  % ugly backup for legacy compatibility
     mat2csv2Dfl(optPar,[fitFileName '.csv'],0,1,hd);
