@@ -55,7 +55,7 @@ hmmHub = modStruc.hmmHub;
 % and inputs (pos/unfair returns etc) have been provided: 
 if isfield(hmmHub,'A') && ~isempty(Inp); hmmHub = rmfield(hmmHub,'A'); end
     
-mdpPos = modStruc.mdpPos;   % Reporting positivity MDP
+mdpPos = modStruc.mdpPos;   % Reporting positivity MDPS
 
 %% Bring parameters to native space, i.e. out of log- , logit- etc. space  
 % to make suitable to pass to the model to compute the log-likelihood

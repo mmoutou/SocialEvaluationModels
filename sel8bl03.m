@@ -1,11 +1,20 @@
 function [fitM, Par8, MDP8] = sel8bl03( pTr8, inp8, resp8, modStruc8, repoFn, details)
 % sel8bl puts together all 8 blocks of an experiment. pTr8 are the participant param (transf. -> -INF to INF),
-%        inp8 the inputs (stimuli) that the participant saw over all 8 blocks, resp8 the responses 
-%        they gave. If resp8 (or both resp8 and inp8) are not given, then the function runs in
-%        generative mode and simulates an experiment. parPri are the priors on the parameters,
-%        which are optional.
-%            The function outputs are as per learnReportXX, but now for 8 blocks, plus fitM
-%        are the fit measures sum-log-likelihood and a posteriori density
+%        inp8 the inputs (stimuli) that the participant saw over all 8 blocks, 
+%        resp8 the responses they gave. If resp8 (or both resp8 and inp8) are not given, 
+%              then the function runs in generative mode and simulates an experiment. 
+%        modStruc8 is the model structure, including a comprehensive list of params
+%              and a bunch that are over-written by pTr8 and repoFn.
+%              modStruc8 has included:
+%            * indexP: block-level parameters. So not used for all 8 blocks!
+%            * allP: long list of parameters / argument needed to run the models.
+%            * hmmHub: specification of the learning 'hub' HMM
+%            * mdpPos: positivity reporting MDP
+%            * d0: initial state priors
+%            * priPar: IMPORTANT ARRAY WITH PRIORS FOR THE PARAMETERS. 
+%            * repoFun: reporting function index - e.g. use simple softmax-like is '1'
+%  sel8bl outputs are as per learnReportXX, but now for 8 blocks, plus fitM
+%  are the fit measures sum-log-likelihood and a posteriori density
 testCode = 0;
 try repoFn;  catch, repoFn = 1; end    % repoFn 0 is the AcIn report MDPs, repoFn 1 based on
                                        % full pmf sharpening (softmax-like) ... 
